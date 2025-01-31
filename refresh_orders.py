@@ -143,7 +143,7 @@ def process_orders():
         email_id = email["id"]
         sender = email["sender"]
         body = email["body"]
-        date_of_order = datetime.strptime(email["email_date"], "%b %d, %Y").strftime("%Y-%m-%d")
+        date_of_order = email["email_date"].strftime("%Y-%m-%d") if isinstance(email["email_date"], datetime) else datetime.strptime(email["email_date"], "%b %d, %Y").strftime("%Y-%m-%d")
 
         try:
             extracted_orders = extract_data(body)
