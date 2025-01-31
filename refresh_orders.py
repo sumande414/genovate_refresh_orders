@@ -177,10 +177,14 @@ def api_process_orders():
         # Process the orders
         process_orders()
 
-        return jsonify({"message": "Orders processed successfully."}), 200
+        response = jsonify({"message": "Orders processed successfully."})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response,200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response,500
 
 # Run the Flask app
 if __name__ == "__main__":
