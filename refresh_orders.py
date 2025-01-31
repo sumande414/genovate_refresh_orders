@@ -44,7 +44,7 @@ def get_db_connection():
 # Function to extract order data from email body
 def extract_data(text):
     prompt = f"""
-    Extract the product name, quantity, address, and date of order from the following text:
+    Extract the product name, quantity and address from the following text:
     
     Text: "{text}"
     
@@ -53,14 +53,12 @@ def extract_data(text):
         {{
             "product_name": "<product_name>",
             "quantity": "<quantity>",
-            "address": "<address>",
-            "date_of_order": "<date_of_order>"
+            "address": "<address>"
         }},
         {{
             "product_name": "<product_name>",
             "quantity": "<quantity>",
-            "address": "<address>",
-            "date_of_order": "<date_of_order>"
+            "address": "<address>"
         }}
     ]
     Do not include any extra text before or after the JSON output.
@@ -87,16 +85,6 @@ def extract_data(text):
         print(f"Response content: {json_response}")
         raise ValueError(f"Error decoding JSON: {e}\nResponse content: {json_response}")
     
-    # Convert the date to the correct format (YYYY-MM-DD)
-    for order in orders:
-        if order.get("date_of_order"):
-            try:
-                # Try to parse the date
-                order["date_of_order"] = datetime.strptime(order["date_of_order"], "%b %d, %Y").strftime("%Y-%m-%d")
-            except ValueError:
-                # Handle cases where the date format is not recognized
-                order["date_of_order"] = None  # Or any default date if needed
-
     return orders
 
 # Function to fetch unprocessed emails from the database
@@ -104,7 +92,7 @@ def fetch_unprocessed_emails():
     connection = get_db_connection()
     cursor = connection.cursor()
 
-    query = "SELECT id, sender, body FROM RawEmails WHERE processed = 0"
+    query = "SELECT id, sender, body, email_date FROM RawEmails WHERE processed = 0"
     cursor.execute(query)
     emails = cursor.fetchall()
 
@@ -155,6 +143,7 @@ def process_orders():
         email_id = email["id"]
         sender = email["sender"]
         body = email["body"]
+        date_of_order = email["email_date"]
 
         try:
             extracted_orders = extract_data(body)
@@ -162,6 +151,7 @@ def process_orders():
             # Attach sender email if not present in extraction
             for order in extracted_orders:
                 order["customer_email"] = sender
+                order["date_of_order"] = date_of_order
 
             # Print the extracted order data
             print(f"Extracted Orders for {sender}:")
