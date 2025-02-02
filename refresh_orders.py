@@ -7,13 +7,13 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 
-# Load environment variables
+
 load_dotenv()
 
-# Initialize Flask app
+
 app = Flask(__name__)
 
-# Load environment variables for DB connection and API key
+
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -21,10 +21,10 @@ DB_NAME = os.getenv("DB_NAME")
 DB_PORT = int(os.getenv("DB_PORT"))
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Initialize the LLM API
+
 llm = Groq(api_key=GROQ_API_KEY)
 
-# Database connection function
+
 def get_db_connection():
     timeout = 10
     conn = pymysql.connect(
@@ -41,7 +41,7 @@ def get_db_connection():
     )
     return conn
 
-# Function to extract order data from email body
+
 def extract_data(text):
     prompt = f"""
     Extract the product name, quantity and address from the following text:
@@ -69,7 +69,7 @@ def extract_data(text):
         messages=[{"role": "user", "content": prompt}]
     )
     
-    # Log the raw response
+
     print(f"API Response: {response}")
     
     json_response = response.choices[0].message.content.strip()
@@ -87,7 +87,7 @@ def extract_data(text):
     
     return orders
 
-# Function to fetch unprocessed emails from the database
+
 def fetch_unprocessed_emails():
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -100,7 +100,7 @@ def fetch_unprocessed_emails():
     connection.close()
     return emails
 
-# Function to insert extracted data into Orders table
+
 def insert_orders(order_data):
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -123,7 +123,7 @@ def insert_orders(order_data):
     cursor.close()
     connection.close()
 
-# Function to update the processed status in the database
+
 def mark_email_as_processed(email_id, processed_status):
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -135,7 +135,7 @@ def mark_email_as_processed(email_id, processed_status):
     cursor.close()
     connection.close()
 
-# Main function to process orders
+
 def process_orders():
     emails = fetch_unprocessed_emails()
 
@@ -148,33 +148,33 @@ def process_orders():
         try:
             extracted_orders = extract_data(body)
 
-            # Attach sender email if not present in extraction
+           
             for order in extracted_orders:
                 order["customer_email"] = sender
                 order["date_of_order"] = date_of_order
 
-            # Print the extracted order data
+            
             print(f"Extracted Orders for {sender}:")
             for order in extracted_orders:
                 print(json.dumps(order, indent=4))
 
-            # Insert orders into the database
+            
             insert_orders(extracted_orders)
 
-            # Mark the email as processed after successfully inserting the orders
+            
             mark_email_as_processed(email_id, 1)
             print(f"Email {email_id} processed successfully.")
 
         except Exception as e:
-            # If any error occurs during processing, log the error and mark the email as unprocessed (processed = 0)
+            
             print(f"Error processing email {email_id}: {e}")
             mark_email_as_processed(email_id, 0)
 
-# API endpoint to trigger the order processing
+
 @app.route('/process-orders', methods=['GET'])
 def api_process_orders():
     try:
-        # Process the orders
+       
         process_orders()
 
         response = jsonify({"message": "Orders processed successfully."})
@@ -186,6 +186,6 @@ def api_process_orders():
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response,500
 
-# Run the Flask app
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
